@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>JESSADA HUNTER | SMART MONEY + ICT</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1727">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JESSADA HUNTER">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#060b14;
+    --bg-panel:#0d1727;
+    --bg-panel-2:#132036;
+    --gold:#d4af37;
+    --gold-bright:#f5cb5c;
+    --blue:#3b82f6;
+    --blue-dim:#1e3a5f;
+    --green:#22c55e;
+    --red:#f0455a;
+    --text:#e9eef5;
+    --text-dim:#8c9ab3;
+    --border:#22314a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(59,130,246,0.14), transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, rgba(212,175,55,0.10), transparent 55%),
+      var(--bg-deep);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Rajdhani',sans-serif;}
+
+  /* ---------- Radar / Crosshair signature mark ---------- */
+  .radar{position:relative;width:76px;height:76px;flex-shrink:0;}
+  .radar svg{width:100%;height:100%;display:block;}
+  .radar .sweep{transform-origin:38px 38px;animation:spin 2.6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .radar.small{width:22px;height:22px;}
+  .radar.small .sweep{transform-origin:11px 11px;}
+
+  /* ---------- Passcode Gate ---------- */
+  #gate{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  }
+  .gate-card{
+    width:100%;max-width:380px;
+    background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:36px 30px 28px;
+    text-align:center;
+    box-shadow:0 0 0 1px rgba(212,175,55,0.06), 0 30px 60px -20px rgba(0,0,0,0.7);
+    position:relative;
+    overflow:hidden;
+  }
+  .gate-card::before{
+    content:"";position:absolute;inset:0;border-radius:20px;padding:1px;
+    background:linear-gradient(135deg, rgba(212,175,55,0.5), transparent 40%, rgba(59,130,246,0.35));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+  }
+  .gate-card .radar{margin:0 auto 14px;}
+  .brand-title{
+    font-size:26px;font-weight:700;letter-spacing:1.5px;
+    background:linear-gradient(90deg, var(--gold-bright), var(--gold));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin:0;
+  }
+  .brand-sub{
+    font-size:11.5px;letter-spacing:3px;color:var(--blue);
+    text-transform:uppercase;margin:4px 0 26px;font-weight:600;
+  }
+  .gate-card input[type=password]{
+    width:100%;padding:13px 14px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg-deep);color:var(--text);font-size:15px;text-align:center;
+    letter-spacing:2px;font-family:'JetBrains Mono',monospace;
+    outline:none;transition:border-color .2s;
+  }
+  .gate-card input[type=password]:focus{border-color:var(--gold);}
+  .gate-card input.shake{animation:shake .35s;border-color:var(--red);}
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-8px);}
+    40%{transform:translateX(8px);}
+    60%{transform:translateX(-6px);}
+    80%{transform:translateX(6px);}
+  }
+  .unlock-btn{
+    margin-top:14px;width:100%;padding:13px;border:none;border-radius:10px;
+    background:linear-gradient(90deg, var(--gold), var(--gold-bright));
+    color:#12100a;font-weight:700;font-size:14.5px;letter-spacing:1px;
+    cursor:pointer;transition:transform .15s, box-shadow .15s;
+    font-family:'Rajdhani',sans-serif;text-transform:uppercase;
+  }
+  .unlock-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px -6px rgba(212,175,55,0.5);}
+  .gate-error{color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;}
+  .gate-hint{margin-top:22px;font-size:11.5px;color:var(--text-dim);line-height:1.6;}
+  .gate-hint b{color:var(--blue);}
+
+  /* ---------- App shell ---------- */
+  #app{display:none;min-height:100vh;flex-direction:column;}
+  header{
+    display:flex;align-items:center;gap:14px;
+    padding:calc(16px + env(safe-area-inset-top)) 22px 16px;
+    border-bottom:1px solid var(--border);
+    background:rgba(13,23,39,0.7);backdrop-filter:blur(6px);
+    position:sticky;top:0;z-index:5;
+  }
+  body{padding-bottom:env(safe-area-inset-bottom);}
+  header .brand-title{font-size:19px;margin:0;letter-spacing:1px;}
+  header .brand-sub{font-size:9.5px;letter-spacing:2px;margin:2px 0 0;}
+  header .headtext{display:flex;flex-direction:column;}
+  .lock-btn{
+    margin-left:auto;background:none;border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Inter';
+  }
+  .lock-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+  main{flex:1;max-width:1180px;width:100%;margin:0 auto;padding:26px 20px 60px;
+    display:grid;grid-template-columns:400px 1fr;gap:22px;}
+  @media (max-width:900px){main{grid-template-columns:1fr;}}
+
+  .panel{
+    background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid var(--border);border-radius:var(--radius);padding:20px;
+  }
+  .panel h2{
+    font-family:'Rajdhani',sans-serif;font-size:15px;letter-spacing:1.2px;
+    text-transform:uppercase;color:var(--gold-bright);margin:0 0 14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2::before{content:"";width:3px;height:14px;background:var(--gold);border-radius:2px;display:inline-block;}
+  .panel .subhint{font-size:11.5px;color:var(--text-dim);margin:-8px 0 14px;line-height:1.6;}
+
+  /* ---------- Multi-TF upload grid ---------- */
+  .tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tf-slot{
+    border:1.5px dashed var(--border);border-radius:10px;
+    padding:10px;text-align:center;cursor:pointer;position:relative;
+    background:var(--bg-deep);transition:border-color .2s, background .2s;
+    min-height:108px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .tf-slot.drag{border-color:var(--gold);background:rgba(212,175,55,0.06);}
+  .tf-slot .tf-tag{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12.5px;letter-spacing:1.5px;
+    color:var(--blue);text-transform:uppercase;margin-bottom:4px;
+  }
+  .tf-slot.core .tf-tag{color:var(--gold-bright);}
+  .tf-slot .tf-hint{font-size:9.5px;color:var(--text-dim);}
+  .tf-slot .tf-icon{opacity:0.65;margin-bottom:2px;}
+  .tf-slot img{width:100%;height:70px;object-fit:cover;border-radius:6px;}
+  .tf-slot.filled{border-style:solid;border-color:rgba(34,197,94,0.4);}
+  .tf-slot .tf-remove{
+    position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;
+    background:rgba(6,11,20,0.85);color:var(--red);font-size:11px;line-height:18px;
+    text-align:center;cursor:pointer;border:1px solid var(--red);
+  }
+  .tf-slot .tf-check{position:absolute;top:4px;left:6px;color:var(--green);font-size:12px;}
+
+  .analyze-btn{
+    margin-top:16px;width:100%;padding:14px;border:none;border-radius:10px;
+    background:linear-gradient(90deg, var(--blue), #2563eb);
+    color:#fff;font-weight:700;font-size:14.5px;letter-spacing:0.5px;
+    cursor:pointer;font-family:'Rajdhani',sans-serif;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    transition:opacity .2s;
+  }
+  .analyze-btn:disabled{opacity:0.55;cursor:not-allowed;}
+  .analyze-btn:not(:disabled):hover{filter:brightness(1.08);}
+
+  .upload-count{font-size:11.5px;color:var(--text-dim);margin-top:10px;text-align:center;}
+  .upload-count b{color:var(--gold-bright);}
+
+  .checklist-mini{margin-top:16px;font-size:11.5px;color:var(--text-dim);line-height:1.9;}
+  .checklist-mini li{list-style:none;}
+
+  /* ---------- Results ---------- */
+  .empty-state{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:70px 20px;color:var(--text-dim);text-align:center;font-size:13.5px;gap:16px;
+  }
+  .status-line{
+    display:flex;align-items:center;gap:12px;color:var(--gold-bright);
+    font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-size:15px;
+    padding:40px 0;justify-content:center;
+  }
+  .error-box{
+    background:rgba(240,69,90,0.08);border:1px solid rgba(240,69,90,0.35);
+    color:#ff8b98;padding:14px 16px;border-radius:10px;font-size:13px;
+  }
+
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;
+  }
+  .badge.buy{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.4);}
+  .badge.sell{background:rgba(240,69,90,0.15);color:var(--red);border:1px solid rgba(240,69,90,0.4);}
+
+  .grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  @media (max-width:560px){.grid-cards{grid-template-columns:1fr;}}
+  .mini-card{
+    background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;
+  }
+  .mini-card .label{font-size:10.5px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+  .mini-card .value{font-size:13.5px;font-weight:600;line-height:1.5;}
+
+  .entry-card{
+    background:linear-gradient(135deg, rgba(212,175,55,0.10), rgba(59,130,246,0.06));
+    border:1px solid rgba(212,175,55,0.35);border-radius:12px;padding:20px;margin-bottom:16px;
+  }
+  .entry-card .top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px;}
+  .entry-card .desc{font-size:13px;color:var(--text-dim);line-height:1.6;}
+
+  .sl-tp-row{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px;}
+  .sl-card, .tp-card{border-radius:10px;padding:14px 16px;border:1px solid var(--border);background:var(--bg-deep);}
+  .sl-card{border-color:rgba(240,69,90,0.35);}
+  .tp-item{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+  .tp-item:last-child{border-bottom:none;}
+  .tp-item .tag{color:var(--green);font-weight:700;font-family:'JetBrains Mono';font-size:12px;}
+
+  .rr-pill{
+    display:inline-block;margin-top:8px;padding:6px 14px;border-radius:20px;
+    background:rgba(59,130,246,0.15);color:var(--blue);font-family:'JetBrains Mono';
+    font-size:13px;border:1px solid rgba(59,130,246,0.4);
+  }
+
+  .checklist{display:flex;flex-direction:column;gap:8px;margin:16px 0;}
+  .check-item{display:flex;align-items:center;gap:10px;font-size:13px;padding:8px 10px;border-radius:8px;background:var(--bg-deep);border:1px solid var(--border);}
+  .check-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .check-item.pass .dot{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .check-item.fail .dot{background:var(--red);box-shadow:0 0 8px var(--red);}
+
+  .confidence-row{display:flex;align-items:center;gap:10px;margin:16px 0;}
+  .confidence-bar{flex:1;height:8px;border-radius:4px;background:var(--border);overflow:hidden;}
+  .confidence-bar > div{height:100%;background:linear-gradient(90deg, var(--gold), var(--gold-bright));}
+
+  .notes-box{
+    font-size:12.5px;color:var(--text-dim);line-height:1.7;background:var(--bg-deep);
+    border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:6px;
+  }
+
+  .disclaimer{
+    margin-top:22px;font-size:11px;color:var(--text-dim);line-height:1.7;
+    border-top:1px solid var(--border);padding-top:14px;
+  }
+  .disclaimer b{color:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- ============ PASSCODE GATE ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="radar">
+      <svg viewBox="0 0 76 76">
+        <circle cx="38" cy="38" r="34" fill="none" stroke="#22314a" stroke-width="1.5"/>
+        <circle cx="38" cy="38" r="22" fill="none" stroke="#22314a" stroke-width="1"/>
+        <line x1="4" y1="38" x2="72" y2="38" stroke="#22314a" stroke-width="1"/>
+        <line x1="38" y1="4" x2="38" y2="72" stroke="#22314a" stroke-width="1"/>
+        <g class="sweep">
+          <path d="M38 38 L38 4 A34 34 0 0 1 65 20 Z" fill="url(#g1)" opacity="0.55"/>
+        </g>
+        <circle cx="38" cy="38" r="4.5" fill="#d4af37"/>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f5cb5c" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#f5cb5c" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <p class="brand-title display">JESSADA HUNTER</p>
+    <p class="brand-sub display">Smart Money &middot; ICT &middot; Liquidity Hunt</p>
+    <input type="password" id="passInput" placeholder="ใส่รหัสผ่านเพื่อเข้าใช้งาน" autocomplete="off">
+    <button class="unlock-btn" id="unlockBtn">ปลดล็อกระบบ</button>
+    <div class="gate-error" id="gateError"></div>
+    <div class="gate-hint">
+      ลืมรหัสผ่าน หรือต้องการรหัสประจำเดือน?<br>
+      ติดต่อ LINE ID : <b>godungjessada</b>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app">
+  <header>
+    <div class="radar small">
+      <svg viewBox="0 0 22 22">
+        <circle cx="11" cy="11" r="9.5" fill="none" stroke="#22314a" stroke-width="1"/>
+        <circle cx="11" cy="11" r="1.6" fill="#d4af37"/>
+        <g class="sweep">
+          <path d="M11 11 L11 1.5 A9.5 9.5 0 0 1 19 6 Z" fill="#f5cb5c" opacity="0.5"/>
+        </g>
+      </svg>
+    </div>
+    <div class="headtext">
+      <p class="brand-title display">JESSADA HUNTER</p>
+      <p class="brand-sub display" style="color:var(--blue)">SMART MONEY + ICT SYSTEM</p>
+    </div>
+    <button class="lock-btn" id="lockBtn">🔒 ล็อกระบบ</button>
+  </header>
+
+  <main>
+    <!-- LEFT: Multi-TF upload panel -->
+    <section class="panel">
+      <h2>อัปโหลดกราฟหลาย Timeframe</h2>
+      <div class="subhint">แนบได้ตั้งแต่ DAY ลงมาถึง 5 นาที ยิ่งแนบครบยิ่งวิเคราะห์ละเอียด แม่นยำขึ้น (TF ทองคือ TF หลักที่แนะนำให้มีเสมอ)</div>
+
+      <div class="tf-grid" id="tfGrid">
+        <!-- slots injected by JS -->
+      </div>
+      <input type="file" id="fileInputHidden" accept="image/png, image/jpeg" style="display:none;">
+
+      <div class="upload-count" id="uploadCount">แนบแล้ว <b>0/6</b> Timeframe</div>
+
+      <button class="analyze-btn" id="analyzeBtn" disabled>🎯 เริ่มล่าสภาพคล่อง (วิเคราะห์ทุก TF)</button>
+
+      <ul class="checklist-mini">
+        <li>✓ DAY / 4H — อคติภาพใหญ่ (Bias)</li>
+        <li>✓ 1H — โครงสร้าง + Liquidity หลัก (SSL/BSL)</li>
+        <li>✓ 45M / 15M — เจาะโซน Premium/Discount</li>
+        <li>✓ 5M — CHoCH/MSS + จุดเข้า Fibonacci OTE</li>
+      </ul>
+    </section>
+
+    <!-- RIGHT: Results panel -->
+    <section class="panel">
+      <h2>ผลการวิเคราะห์</h2>
+      <div id="resultsArea">
+        <div class="empty-state">
+          <div class="radar">
+            <svg viewBox="0 0 76 76">
+              <circle cx="38" cy="38" r="34" fill="none" stroke="#22314a" stroke-width="1.5"/>
+              <circle cx="38" cy="38" r="22" fill="none" stroke="#22314a" stroke-width="1"/>
+              <circle cx="38" cy="38" r="4" fill="#22314a"/>
+            </svg>
+          </div>
+          แนบกราฟตามแต่ละ Timeframe ทางซ้าย แล้วกด "เริ่มล่าสภาพคล่อง"<br>เพื่อให้ระบบวิเคราะห์ Top-Down ตามหลัก SMC + ICT + Fibonacci OTE
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div style="max-width:1180px;margin:0 auto;padding:0 20px 30px;">
+    <div class="disclaimer">
+      <b>คำเตือนความเสี่ยง:</b> ผลการวิเคราะห์ทั้งหมดสร้างโดยระบบ AI เพื่อการศึกษาและประกอบการตัดสินใจเท่านั้น
+      ไม่ถือเป็นคำแนะนำการลงทุนและไม่รับประกันความแม่นยำหรือผลกำไร การเทรดมีความเสี่ยงสูง
+      โปรดใช้วิจารณญาณของท่านเอง ตรวจสอบซ้ำด้วยตนเอง และบริหารความเสี่ยง (Position Sizing / SL) อย่างเหมาะสมทุกครั้งก่อนตัดสินใจเข้าออเดอร์จริง
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================
+   ACCESS CONTROL — แก้รหัสผ่านได้ตรงนี้
+   ========================================================== */
+const ACCESS_PASSCODE = "JESSADA2026"; // <-- เปลี่ยนรหัสผ่านได้ที่นี่ (แนะนำเปลี่ยนรายเดือน)
+
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+const passInput = document.getElementById('passInput');
+const unlockBtn = document.getElementById('unlockBtn');
+const gateError = document.getElementById('gateError');
+const lockBtn = document.getElementById('lockBtn');
+
+function tryUnlock(){
+  if(passInput.value === ACCESS_PASSCODE){
+    gate.style.display = 'none';
+    app.style.display = 'flex';
+  } else {
+    gateError.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+    passInput.classList.remove('shake'); void passInput.offsetWidth;
+    passInput.classList.add('shake');
+  }
+}
+unlockBtn.addEventListener('click', tryUnlock);
+passInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryUnlock(); });
+lockBtn.addEventListener('click', () => {
+  app.style.display = 'none';
+  gate.style.display = 'flex';
+  passInput.value = '';
+  gateError.textContent = '';
+});
+
+/* ==========================================================
+   MULTI-TIMEFRAME UPLOAD
+   ========================================================== */
+const TIMEFRAMES = [
+  { key: 'day', label: 'DAY',  hint: 'ภาพรวมรายวัน',      core: true  },
+  { key: '4h',  label: '4H',   hint: 'เทรนด์หลัก + BOS',   core: true  },
+  { key: '1h',  label: '1H',   hint: 'Liquidity SSL/BSL',  core: true  },
+  { key: '45m', label: '45M',  hint: 'เจาะโซน Premium/Discount', core: false },
+  { key: '15m', label: '15M',  hint: 'รอสัญญาณสะบัดตัว',   core: false },
+  { key: '5m',  label: '5M',   hint: 'CHoCH + จุดเข้า OTE', core: true  },
+];
+
+const tfData = {}; // key -> { base64, mediaType, dataUrl }
+const tfGrid = document.getElementById('tfGrid');
+const fileInputHidden = document.getElementById('fileInputHidden');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const uploadCount = document.getElementById('uploadCount');
+let activeSlotKey = null;
+
+function buildSlots(){
+  tfGrid.innerHTML = TIMEFRAMES.map(tf => `
+    <div class="tf-slot ${tf.core ? 'core' : ''}" id="slot-${tf.key}" data-key="${tf.key}">
+      <div class="tf-tag">${tf.label}</div>
+      <svg class="tf-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-dim)"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5M12 4v12"/></svg>
+      <div class="tf-hint">${tf.hint}</div>
+    </div>
+  `).join('');
+
+  TIMEFRAMES.forEach(tf => {
+    const slotEl = document.getElementById(`slot-${tf.key}`);
+    slotEl.addEventListener('click', () => {
+      activeSlotKey = tf.key;
+      fileInputHidden.click();
+    });
+    slotEl.addEventListener('dragover', e => { e.preventDefault(); slotEl.classList.add('drag'); });
+    slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag'));
+    slotEl.addEventListener('drop', e => {
+      e.preventDefault(); slotEl.classList.remove('drag');
+      if(e.dataTransfer.files && e.dataTransfer.files[0]) loadFileToSlot(tf.key, e.dataTransfer.files[0]);
+    });
+  });
+}
+buildSlots();
+
+fileInputHidden.addEventListener('change', e => {
+  if(e.target.files[0] && activeSlotKey) loadFileToSlot(activeSlotKey, e.target.files[0]);
+  fileInputHidden.value = '';
+});
+
+function loadFileToSlot(key, file){
+  if(!file.type.startsWith('image/')){ alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    tfData[key] = { base64: dataUrl.split(',')[1], mediaType: file.type, dataUrl };
+    renderSlot(key);
+    updateUploadState();
+  };
+  reader.onerror = () => alert('ไม่สามารถอ่านไฟล์ได้ กรุณาลองใหม่');
+  reader.readAsDataURL(file);
+}
+
+function removeSlot(key, evt){
+  evt.stopPropagation();
+  delete tfData[key];
+  renderSlot(key);
+  updateUploadState();
+}
+
+function renderSlot(key){
+  const tf = TIMEFRAMES.find(t => t.key === key);
+  const slotEl = document.getElementById(`slot-${key}`);
+  const entry = tfData[key];
+  if(entry){
+    slotEl.classList.add('filled');
+    slotEl.innerHTML = `
+      <span class="tf-check">✓</span>
+      <span class="tf-remove" onclick="removeSlot('${key}', event)">✕</span>
+      <div class="tf-tag">${tf.label}</div>
+      <img src="${entry.dataUrl}" alt="${tf.label} chart">
+    `;
+  } else {
+    slotEl.classList.remove('filled');
+    slotEl.innerHTML = `
+      <div class="tf-tag">${tf.label}</div>
+      <svg class="tf-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-dim)"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5M12 4v12"/></svg>
+      <div class="tf-hint">${tf.hint}</div>
+    `;
+  }
+}
+
+function updateUploadState(){
+  const count = Object.keys(tfData).length;
+  uploadCount.innerHTML = `แนบแล้ว <b>${count}/6</b> Timeframe`;
+  analyzeBtn.disabled = count < 2; // ต้องมีอย่างน้อย 2 TF เพื่อทำ top-down analysis ได้จริง
+}
+
+/* ==========================================================
+   ANALYSIS ENGINE — SMC + ICT + Fibonacci OTE (Multi-Timeframe)
+   ========================================================== */
+const SYSTEM_PROMPT = `คุณคือนักวิเคราะห์กราฟผู้เชี่ยวชาญระบบเทรด SMC (Smart Money Concept) ผสาน ICT (Inner Circle Trader) และ Fibonacci OTE (Optimal Trade Entry) คุณจะได้รับภาพกราฟของสินทรัพย์เดียวกันจากหลาย Timeframe โดยแต่ละภาพจะมีป้ายกำกับ (label) บอกไว้ก่อนหน้าภาพว่าเป็น TF ใด (DAY, 4H, 1H, 45M, 15M, 5M) — ไม่จำเป็นต้องมีครบทุก TF เสมอไป ให้ใช้เฉพาะภาพที่ได้รับจริงเท่านั้น ห้ามสมมติข้อมูลของ TF ที่ไม่ได้แนบมา
+
+วิธีวิเคราะห์แบบ Top-Down ตามลำดับ:
+1) DAY/4H: หาอคติภาพใหญ่ (Bias) และแนวโน้มระยะยาว
+2) 4H/1H: หาโครงสร้างตลาดหลัก BOS (Break of Structure), Liquidity สำคัญ (Sell Side Liquidity ที่ equal lows/แนวรับเดิม, Buy Side Liquidity ที่ equal highs/แนวต้านเดิม), Fair Value Gap (FVG), Order Block (OB) กาง Fibonacci จาก Swing Low/High เพื่อแบ่ง Premium Zone (เหนือ 0.5) และ Discount Zone (ใต้ 0.5)
+3) 45M/15M: ใช้เจาะโซนให้แคบลง ดูว่าราคาเข้าใกล้ discount/premium zone และเริ่มมีสัญญาณการกลับตัวหรือย่อตัวหรือยัง
+4) ตรวจสอบว่าราคาได้ "กวาดสภาพคล่อง" (Liquidity Sweep) แล้วหรือยัง — ถ้ายังไม่กวาด ห้ามแนะนำให้เข้าเทรดเด็ดขาด ให้ตอบ side เป็น "WAIT"
+5) 5M: มองหา Liquidity Sweep ระดับย่อยและสัญญาณยืนยัน CHoCH/MSS (Change of Character / Market Structure Shift)
+6) หากเงื่อนไขครบ ให้หาจุดเข้าโดยใช้ Fibonacci OTE ระดับ 0.618–0.79 (จุดคมสุดคือ 0.705) ที่ TF 5 นาที ซึ่งมักซ้อนทับกับ FVG/OB ของ TF ย่อย
+7) กำหนด Stop Loss ให้แคบไว้ใต้/เหนือจุด Liquidity Sweep ล่าสุด (เผื่อสเปรด ~3-5 pips)
+8) กำหนด Take Profit หลายระดับโดยอิงเป้าหมายสภาพคล่องฝั่งตรงข้ามใน TF ใหญ่ (TP1 = fibonacci extension -0.27/-0.618, TP2 = แนวต้าน/แนวรับเดิมของ TF ใหญ่, TP3 = Unmitigated FVG ที่ยังไม่ถูกทดสอบ) เพื่อให้ได้ R:R สูง (เป้าหมาย 1:5 ถึง 1:10+)
+
+หากบาง TF ไม่ได้ถูกแนบมา ให้ระบุใน "notes" ว่าขาด TF ใดไปบ้าง และผลกระทบต่อความมั่นใจของการวิเคราะห์ หากภาพไม่มีข้อมูลราคาชัดเจนหรือไม่สามารถระบุเงื่อนไขบางอย่างได้ ให้ระบุว่า "ไม่สามารถยืนยันได้จากภาพ" อย่าสมมติข้อมูลที่ไม่มีในภาพ
+
+ตอบกลับเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอกเหนือจาก JSON ห้ามใส่ markdown code fence ใช้ schema นี้เป๊ะๆ:
+{
+  "tf_used": "รายชื่อ TF ที่ได้รับจริง เช่น DAY, 4H, 1H, 5M",
+  "day_bias": "อคติภาพใหญ่จาก DAY/4H",
+  "htf_structure": "โครงสร้างและ Liquidity หลักจาก 4H/1H (BOS, SSL/BSL, FVG, OB)",
+  "zone": "Premium หรือ Discount พร้อมเหตุผลสั้นๆ",
+  "refinement": "การเจาะโซนจาก 45M/15M (ถ้ามีภาพ)",
+  "sweep_status": "สรุปว่ากวาดสภาพคล่องแล้วหรือยัง",
+  "choch_5m": "สรุปสัญญาณ CHoCH/MSS ใน TF 5 นาที",
+  "side": "BUY หรือ SELL หรือ WAIT (ถ้าเงื่อนไขยังไม่ครบ)",
+  "entry_description": "คำอธิบายจุดเข้าตาม Fibonacci OTE",
+  "sl_description": "คำอธิบายจุดตั้ง Stop Loss และเหตุผล",
+  "tp_list": [
+    {"label":"TP1","description":"..."},
+    {"label":"TP2","description":"..."},
+    {"label":"TP3","description":"..."}
+  ],
+  "rr_ratio": "เช่น 1:5 - 1:10",
+  "checklist": {
+    "trend": true,
+    "liquidity_swept": true,
+    "value_zone": true,
+    "confirmation": true,
+    "entry_ready": true
+  },
+  "confidence_percent": 0,
+  "notes": "ข้อควรระวัง TF ที่ขาด หรือสิ่งที่ยังไม่ชัดเจนจากภาพ"
+}`;
+
+async function analyzeChart(){
+  const keysOrder = ['day','4h','1h','45m','15m','5m'];
+  const providedKeys = keysOrder.filter(k => tfData[k]);
+  if(providedKeys.length < 2) return;
+
+  analyzeBtn.disabled = true;
+  const resultsArea = document.getElementById('resultsArea');
+  resultsArea.innerHTML = `
+    <div class="status-line">
+      <div class="radar small"><svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.5" fill="none" stroke="#22314a" stroke-width="1"/><g class="sweep"><path d="M11 11 L11 1.5 A9.5 9.5 0 0 1 19 6 Z" fill="#f5cb5c" opacity="0.6"/></g></svg></div>
+      กำลังวิเคราะห์ Top-Down ทุก Timeframe และล่าสภาพคล่อง...
+    </div>`;
+
+  try{
+    const tfLabelMap = { day:'DAY', '4h':'4H', '1h':'1H', '45m':'45M', '15m':'15M', '5m':'5M' };
+    const contentBlocks = [];
+    providedKeys.forEach(k => {
+      contentBlocks.push({ type: "text", text: `ภาพถัดไปคือ Timeframe: ${tfLabelMap[k]}` });
+      contentBlocks.push({ type: "image", source: { type: "base64", media_type: tfData[k].mediaType, data: tfData[k].base64 } });
+    });
+    contentBlocks.push({ type: "text", text: "วิเคราะห์ภาพกราฟทุก Timeframe ข้างต้นตามระบบ SMC+ICT+Fibonacci OTE แบบ Top-Down แล้วตอบเป็น JSON ตาม schema ที่กำหนดเท่านั้น" });
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: contentBlocks }]
+      })
+    });
+
+    if(!response.ok){
+      throw new Error("การเชื่อมต่อ API ล้มเหลว (สถานะ " + response.status + ")");
+    }
+
+    const data = await response.json();
+    const textBlock = (data.content || []).map(b => b.text || "").join("");
+    const cleaned = textBlock.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    renderResults(parsed);
+
+  } catch(err){
+    resultsArea.innerHTML = `<div class="error-box">เกิดข้อผิดพลาดระหว่างวิเคราะห์: ${err.message || err}<br>กรุณาลองใหม่อีกครั้ง หรือตรวจสอบไฟล์ภาพที่แนบ</div>`;
+  } finally {
+    updateUploadState();
+  }
+}
+
+function renderResults(r){
+  const resultsArea = document.getElementById('resultsArea');
+  const sideBadge = r.side === "BUY"
+    ? `<span class="badge buy">▲ BUY</span>`
+    : r.side === "SELL"
+      ? `<span class="badge sell">▼ SELL</span>`
+      : `<span class="badge" style="background:rgba(140,154,179,0.15);color:var(--text-dim);border:1px solid var(--border);">⏳ WAIT</span>`;
+
+  const checklistItems = [
+    ["trend", "Trend Check — Bias/เทรนด์ DAY-4H-1H ชัดเจน"],
+    ["liquidity_swept", "Liquidity Check — กวาดสภาพคล่องแล้ว"],
+    ["value_zone", "Value Check — อยู่ใน Discount/Premium Zone"],
+    ["confirmation", "Confirmation — CHoCH/MSS ยืนยัน TF 5 นาที"],
+    ["entry_ready", "Entry Check — เข้าเงื่อนไข OTE (0.618-0.79)"],
+  ];
+  const cl = r.checklist || {};
+  const checklistHtml = checklistItems.map(([key, label]) => {
+    const ok = !!cl[key];
+    return `<div class="check-item ${ok ? 'pass' : 'fail'}"><span class="dot"></span>${label}: <b style="margin-left:auto">${ok ? 'ผ่าน ✓' : 'ยังไม่ผ่าน ✗'}</b></div>`;
+  }).join("");
+
+  const tpHtml = (r.tp_list || []).map(tp =>
+    `<div class="tp-item"><span class="tag">${tp.label}</span><span>${tp.description}</span></div>`
+  ).join("");
+
+  const confidence = Math.max(0, Math.min(100, parseInt(r.confidence_percent) || 0));
+
+  resultsArea.innerHTML = `
+    <div class="mini-card" style="margin-bottom:14px;">
+      <div class="label">Timeframe ที่ใช้วิเคราะห์</div>
+      <div class="value">${r.tf_used || '-'}</div>
+    </div>
+
+    <div class="grid-cards">
+      <div class="mini-card"><div class="label">Day Bias</div><div class="value">${r.day_bias || '-'}</div></div>
+      <div class="mini-card"><div class="label">Zone</div><div class="value">${r.zone || '-'}</div></div>
+      <div class="mini-card"><div class="label">HTF Structure (4H/1H)</div><div class="value">${r.htf_structure || '-'}</div></div>
+      <div class="mini-card"><div class="label">Sweep Status</div><div class="value">${r.sweep_status || '-'}</div></div>
+    </div>
+
+    <div class="mini-card" style="margin-bottom:14px;">
+      <div class="label">Refinement (45M/15M)</div>
+      <div class="value">${r.refinement || '-'}</div>
+    </div>
+
+    <div class="mini-card" style="margin-bottom:14px;">
+      <div class="label">CHoCH / MSS (TF 5 นาที)</div>
+      <div class="value">${r.choch_5m || '-'}</div>
+    </div>
+
+    <div class="entry-card">
+      <div class="top-row">
+        ${sideBadge}
+        <span class="rr-pill">R:R ${r.rr_ratio || '-'}</span>
+      </div>
+      <div class="desc"><b style="color:var(--text)">จุดเข้า (Fibonacci OTE):</b><br>${r.entry_description || '-'}</div>
+    </div>
+
+    <div class="sl-tp-row">
+      <div class="sl-card">
+        <div class="label" style="color:var(--red);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Stop Loss</div>
+        <div style="font-size:13px;">${r.sl_description || '-'}</div>
+      </div>
+      <div class="tp-card">
+        <div class="label" style="color:var(--green);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Take Profit Ladder</div>
+        ${tpHtml || '<div style="font-size:13px;color:var(--text-dim)">ไม่มีข้อมูล</div>'}
+      </div>
+    </div>
+
+    <h2 style="font-size:13px;">Cheat Sheet Checklist</h2>
+    <div class="checklist">${checklistHtml}</div>
+
+    <h2 style="font-size:13px;">ความมั่นใจของระบบ</h2>
+    <div class="confidence-row">
+      <div class="confidence-bar"><div style="width:${confidence}%"></div></div>
+      <span class="mono" style="font-size:13px;color:var(--gold-bright);">${confidence}%</span>
+    </div>
+
+    <div class="notes-box"><b style="color:var(--text)">หมายเหตุ:</b> ${r.notes || '-'}</div>
+  `;
+}
+
+analyzeBtn.addEventListener('click', analyzeChart);
+
+/* ==========================================================
+   PWA — ลงทะเบียน Service Worker (ทำให้เปิดแอปได้แม้ออฟไลน์
+   และกด "เพิ่มลงหน้าจอโฮม" ได้เหมือนแอปจริง)
+   หมายเหตุ: ฟีเจอร์วิเคราะห์กราฟยังต้องใช้อินเทอร์เน็ตเสมอ
+   เพราะต้องเรียก API วิเคราะห์ภาพ — ออฟไลน์จะเปิดหน้าแอป/
+   หน้าล็อกอินได้ปกติ แต่กดวิเคราะห์ไม่ได้จนกว่าจะต่อเน็ต
+   ========================================================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
